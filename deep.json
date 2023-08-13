@@ -1,0 +1,82 @@
+{
+  "package": {
+    "name": "@flakeed/qr-code-generator",
+    "version": "0.0.3"
+  },
+  "data": [
+    {
+      "package": {
+        "dependencyId": 0,
+        "containValue": "SyncTextFile"
+      },
+      "id": 1
+    },
+    {
+      "package": {
+        "dependencyId": 0,
+        "containValue": "Type"
+      },
+      "id": 2
+    },
+    {
+      "package": {
+        "dependencyId": 0,
+        "containValue": "Any"
+      },
+      "id": 3
+    },
+    {
+      "package": {
+        "dependencyId": 0,
+        "containValue": "Handler"
+      },
+      "id": 4
+    },
+    {
+      "package": {
+        "dependencyId": 0,
+        "containValue": "dockerSupportsJs"
+      },
+      "id": 5
+    },
+    {
+      "package": {
+        "dependencyId": 0,
+        "containValue": "HandleInsert"
+      },
+      "id": 6
+    },
+    {
+      "id": "qrCodeSyncTextFile",
+      "type": 1,
+      "value": {
+        "value": "async ({ data: { newLink: qrCodeGeneratorLink, triggeredByLinkId }, deep, require }) => {\n  const QRCode = await deep.import('qrcode');\n  const axios = await deep.import('axios');\n  const AsyncFile = await deep.id('@deep-foundation/core','AsyncFile');\n  const FormData = await deep.import('form-data');\n\n  const {data:[valueForQrCodeLink]} = await deep.select({\n    id:qrCodeGeneratorLink.to_id\n  })\n  const valueForQrCodeLinkValue = valueForQrCodeLink.value.value;\n  \n  let qrCodeImage;\n  try {\n    qrCodeImage = await QRCode.toDataURL(valueForQrCodeLinkValue);\n  } catch (err) {\n    console.error(err);\n    throw err;\n  }\n\n  const base64Data = qrCodeImage.split(',')[1];\n  const buffer = Buffer.from(base64Data, 'base64');\n\n    const { data: [{ id }] } = await deep.insert({\n          type_id: deep.idLocal('@deep-foundation/core', 'AsyncFile'),\n          in: { data: [\n            {\n              type_id: deep.idLocal('@deep-foundation/core', 'Contain'),\n              from_id: triggeredByLinkId,\n            },\n          ] },\n        });\n\n  const formData = new FormData();\n  formData.append('file', buffer, 'qrcode.png');\n  \n      const ssl = deep.apolloClient.ssl;\n      const path = deep.apolloClient.path.slice(0, -4);\n      const url = `${ssl ? \"https://\" : \"http://\"}${path}/file`;\n          const axiosInstance = axios.create({maxBodyLength: Infinity})\n        await axiosInstance.post(url, formData, {\n          headers: {\n            'linkId': id,\n            'Authorization': `Bearer ${deep.token}`,\n          },\n        })\n  \n  return id;\n}"
+      }
+    },
+    {
+      "id": "GenerateQrCode",
+      "type": 2,
+      "from": 3,
+      "to": 3
+    },
+    {
+      "id": "qrCodeHandler",
+      "type": 4,
+      "from": 5,
+      "to": "qrCodeSyncTextFile"
+    },
+    {
+      "id": "qrCodeHandleInsert",
+      "type": 6,
+      "from": "GenerateQrCode",
+      "to": "qrCodeHandler"
+    }
+  ],
+  "errors": [],
+  "dependencies": [
+    {
+      "name": "@deep-foundation/core",
+      "version": "0.0.2"
+    }
+  ]
+}
